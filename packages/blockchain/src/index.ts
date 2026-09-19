@@ -239,3 +239,17 @@ export function registryArtifactFromDeployment(
     throw new Error("Deployment artifact requires address and chain ID");
   return input;
 }
+
+
+export class MockBlockchainAdapter {
+  constructor(public records: any[]) {}
+  async getInstitution(id: any) {
+    if (id === '0x0') return undefined;
+    return { admin: '0x1234567890123456789012345678901234567890', validFrom: new Date(), validUntil: new Date(Date.now() + 10000000000), status: 1, metadataUri: 'ipfs://mock' };
+  }
+  async isIssuerAuthorized(issuer: any) { return true; }
+  async registerInstitution() { return '0xmocktx'; }
+  async updateAccreditation() { return '0xmocktx'; }
+  async authorizeIssuer() { return '0xmocktx'; }
+  async revokeIssuer() { return '0xmocktx'; }
+}
