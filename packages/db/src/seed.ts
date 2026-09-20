@@ -97,6 +97,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
     }
     for (const row of dataset.accreditation_records)
       await tx.insert(accreditations).values({
+        businessId: row.accreditation_id,
         institutionId: institutionIds.get(row.institution_id)!,
         status:
           row.status === "ACTIVE"
@@ -107,7 +108,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
         validFrom: row.valid_from ? new Date(row.valid_from) : null,
         validUntil: row.valid_until ? new Date(row.valid_until) : null,
         sourceReference: row.reference_id,
-      });
+      }).onConflictDoNothing();
     for (const row of dataset.credentials) {
       const lifecycle = status(row.current_status);
       const student = dataset.students.find(
@@ -168,24 +169,27 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
         .onConflictDoNothing();
     for (const row of dataset.credential_status_history)
       await tx.insert(credentialStatusHistory).values({
+        businessId: row.history_id,
         credentialId: row.credential_id,
         status: status(row.status),
         reason: row.reason,
         changedAt: new Date(row.changed_at),
-      });
+      }).onConflictDoNothing();
     for (const row of dataset.verification_records)
       await tx.insert(verificationRecords).values({
+        businessId: row.verification_id,
         credentialId: row.credential_id,
         trusted: row.result === "VERIFIED",
         evidence: row,
-      });
+      }).onConflictDoNothing();
     for (const row of dataset.audit_logs)
       await tx.insert(auditEvents).values({
+        businessId: row.audit_id,
         eventType: row.action,
         entityId: row.entity_id,
         metadata: row.metadata ?? {},
         createdAt: new Date(row.timestamp),
-      });
+      }).onConflictDoNothing();
   });
 }
 export async function runSyntheticSeed() {
