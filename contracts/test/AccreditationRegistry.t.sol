@@ -12,6 +12,7 @@ contract AccreditationRegistryTest is Test {
     bytes32 institutionId = keccak256("inst.example");
 
     function setUp() public {
+        vm.warp(1000 days);
         vm.prank(authorityAdmin);
         registry = new AccreditationRegistry(authorityAdmin);
     }
@@ -122,7 +123,7 @@ contract AccreditationRegistryTest is Test {
         assertFalse(registry.isAccredited(institutionId));
     }
 
-    function testIsAccreditedReturnsFalseWhenUnknown() public {
+    function testIsAccreditedReturnsFalseWhenUnknown() public view {
         bytes32 unknownId = keccak256("unknown.institution");
         assertFalse(registry.isAccredited(unknownId));
     }
