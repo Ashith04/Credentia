@@ -1,0 +1,32 @@
+ALTER TABLE "institutions" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "institutions" ADD COLUMN "code" text;--> statement-breakpoint
+ALTER TABLE "institutions" ADD COLUMN "type" text;--> statement-breakpoint
+ALTER TABLE "institutions" ADD COLUMN "state" text;--> statement-breakpoint
+ALTER TABLE "institutions" ADD CONSTRAINT "institutions_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "institutions" ADD CONSTRAINT "institutions_code_unique" UNIQUE("code");--> statement-breakpoint
+ALTER TABLE "issuers" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "issuers" ADD COLUMN "name" text;--> statement-breakpoint
+ALTER TABLE "issuers" ADD COLUMN "role" text;--> statement-breakpoint
+ALTER TABLE "issuers" ADD CONSTRAINT "issuers_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "issuer_keys" ADD COLUMN "key_version" text;--> statement-breakpoint
+ALTER TABLE "accreditations" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "accreditations" ADD COLUMN "authority_name" text;--> statement-breakpoint
+ALTER TABLE "accreditations" ADD COLUMN "accreditation_type" text;--> statement-breakpoint
+ALTER TABLE "accreditations" ADD COLUMN "reference_id" text;--> statement-breakpoint
+ALTER TABLE "accreditations" ADD CONSTRAINT "accreditations_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "vc_id" text;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "vc_hash" text;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "status" "credential_lifecycle";--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "issued_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "supersedes_version" integer;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD COLUMN "superseded_by_version" integer;--> statement-breakpoint
+ALTER TABLE "credential_versions" ADD CONSTRAINT "credential_versions_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "credential_status_history" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "credential_status_history" ADD COLUMN "version" integer;--> statement-breakpoint
+ALTER TABLE "credential_status_history" ADD COLUMN "changed_by" text;--> statement-breakpoint
+ALTER TABLE "credential_status_history" ADD CONSTRAINT "credential_status_history_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "verification_records" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "verification_records" ADD CONSTRAINT "verification_records_business_id_unique" UNIQUE("business_id");--> statement-breakpoint
+ALTER TABLE "audit_events" ADD COLUMN "business_id" text;--> statement-breakpoint
+ALTER TABLE "audit_events" ADD CONSTRAINT "audit_events_business_id_unique" UNIQUE("business_id");

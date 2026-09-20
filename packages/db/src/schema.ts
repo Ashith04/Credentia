@@ -29,8 +29,16 @@ export const issuerKeyStatus = pgEnum("issuer_key_status", [
 ]);
 export const institutions = pgTable("institutions", {
   id: uuid("id").defaultRandom().primaryKey(),
+  // businessId: synthetic dataset business key, e.g. "INST-0001"
+  businessId: text("business_id").unique(),
   legalName: text("legal_name").notNull(),
+  // code: short institution code, e.g. "WVIT"
+  code: text("code").unique(),
+  // type: institution category, e.g. "Institute of Technology"
+  type: text("type"),
   country: text("country").notNull(),
+  // state: sub-national region
+  state: text("state"),
   did: text("did").notNull().unique(),
   issuerAddress: text("issuer_address").notNull(),
   accreditationStatus: accreditationStatus("accreditation_status")
@@ -53,9 +61,15 @@ export const issuers = pgTable(
   "issuers",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // businessId: synthetic dataset business key, e.g. "ISS-0001"
+    businessId: text("business_id").unique(),
     institutionId: uuid("institution_id")
       .notNull()
       .references(() => institutions.id),
+    // name: human-readable display name of the issuing person/office
+    name: text("name"),
+    // role: issuer's role, e.g. "Registrar"
+    role: text("role"),
     did: text("did").notNull().unique(),
     authorizedCredentialTypes: jsonb("authorized_credential_types")
       .$type<string[]>()
@@ -74,6 +88,8 @@ export const issuerKeys = pgTable("issuer_keys", {
     .references(() => issuers.id),
   verificationMethod: text("verification_method").notNull().unique(),
   publicKey: text("public_key").notNull(),
+  // keyVersion: descriptive key rotation label, e.g. "v1", "v2"
+  keyVersion: text("key_version"),
   status: issuerKeyStatus("status").notNull().default("active"),
   validFrom: timestamp("valid_from", { withTimezone: true }).notNull(),
   validUntil: timestamp("valid_until", { withTimezone: true }),
@@ -81,13 +97,22 @@ export const issuerKeys = pgTable("issuer_keys", {
 });
 export const accreditations = pgTable("accreditations", {
   id: uuid("id").defaultRandom().primaryKey(),
+  // businessId: synthetic dataset business key, e.g. "ACC-0001"
+  businessId: text("business_id").unique(),
   institutionId: uuid("institution_id")
     .notNull()
     .references(() => institutions.id),
+  // authorityName: name of the accrediting body
+  authorityName: text("authority_name"),
+  // accreditationType: category of accreditation granted
+  accreditationType: text("accreditation_type"),
   status: accreditationStatus("status").notNull(),
   validFrom: timestamp("valid_from", { withTimezone: true }),
   validUntil: timestamp("valid_until", { withTimezone: true }),
+  // sourceReference: legacy free-text reference field (kept for compatibility)
   sourceReference: text("source_reference"),
+  // referenceId: structured external reference ID, e.g. "NBA/WVIT/2020/001"
+  referenceId: text("reference_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -129,12 +154,26 @@ export const credentialVersions = pgTable(
   "credential_versions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // businessId: synthetic dataset business key, e.g. "CVER-00001-1"
+    businessId: text("business_id").unique(),
     credentialId: text("credential_id")
       .notNull()
       .references(() => credentials.credentialId),
     version: integer("version").notNull(),
+    // vcId: W3C VC URI identifying this specific version, e.g. "urn:uuid:vc-..."
+    vcId: text("vc_id"),
+    // vcHash: content hash of the signed VC document
+    vcHash: text("vc_hash"),
+    // status: lifecycle status of this specific version
+    status: credentialLifecycle("status"),
+    // issuedAt: timestamp when this version was originally issued
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
     supersedesCredentialId: text("supersedes_credential_id"),
     supersededByCredentialId: text("superseded_by_credential_id"),
+    // supersedesVersion: version number superseded by this version
+    supersedesVersion: integer("supersedes_version"),
+    // supersededByVersion: version number that supersedes this version
+    supersededByVersion: integer("superseded_by_version"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -147,11 +186,17 @@ export const credentialStatusHistory = pgTable(
   "credential_status_history",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // businessId: synthetic dataset business key, e.g. "SHIST-00001-1"
+    businessId: text("business_id").unique(),
     credentialId: text("credential_id")
       .notNull()
       .references(() => credentials.credentialId),
+    // version: credential version number this status change applies to
+    version: integer("version"),
     status: credentialLifecycle("status").notNull(),
     reason: text("reason"),
+    // changedBy: DID or identifier of the actor who triggered the status change
+    changedBy: text("changed_by"),
     changedAt: timestamp("changed_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -164,6 +209,8 @@ export const verificationRecords = pgTable(
   "verification_records",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // businessId: synthetic dataset business key, e.g. "VER-00001"
+    businessId: text("business_id").unique(),
     credentialId: text("credential_id").notNull(),
     trusted: boolean("trusted").notNull(),
     evidence: jsonb("evidence").notNull(),
@@ -177,6 +224,8 @@ export const verificationRecords = pgTable(
 );
 export const auditEvents = pgTable("audit_events", {
   id: uuid("id").defaultRandom().primaryKey(),
+  // businessId: synthetic dataset business key, e.g. "AUD-00001"
+  businessId: text("business_id").unique(),
   eventType: text("event_type").notNull(),
   entityId: text("entity_id").notNull(),
   metadata: jsonb("metadata").notNull(),
