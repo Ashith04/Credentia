@@ -117,6 +117,14 @@ contract AccreditationRegistry is AccessControl {
                block.timestamp <= inst.validUntil;
     }
 
+    function isAccredited(bytes32 id) external view returns (bool) {
+        Institution memory inst = institutions[id];
+        return inst.admin != address(0) &&
+               inst.status == AccreditationStatus.Accredited &&
+               block.timestamp >= inst.validFrom &&
+               block.timestamp <= inst.validUntil;
+    }
+
     function getInstitution(bytes32 id) external view returns (Institution memory) {
         return institutions[id];
     }

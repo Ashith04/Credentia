@@ -97,4 +97,33 @@ contract AccreditationRegistryTest is Test {
         vm.expectRevert("Caller is not institution admin");
         registry.authorizeIssuer(institutionId, issuer, "ipfs://issuer");
     }
+
+    function testIsAccreditedReturnsTrueWhenValid() public {
+        vm.prank(authorityAdmin);
+        registry.registerInstitution(institutionId, institutionAdmin, uint64(block.timestamp), uint64(block.timestamp + 365 days), "ipfs://inst");
+
+        assertTrue(registry.isAccredited(institutionId));
+    }
+
+    function testIsAccreditedReturnsFalseWhenSuspended() public {
+        vm.prank(authorityAdmin);
+        registry.registerInstitution(institutionId, institutionAdmin, uint64(block.timestamp), uint64(block.timestamp + 365 days), "ipfs://inst");
+
+        vm.prank(authorityAdmin);
+        registry.updateAccreditation(institutionId, uint64(block.timestamp + 365 days), AccreditationRegistry.AccreditationStatus.Suspended, "ipfs://inst");
+
+        assertFalse(registry.isAccredited(institutionId));
+    }
+
+    function testIsAccreditedReturnsFalseWhenExpired() public {
+        vm.prank(authorityAdmin);
+        registry.registerInstitution(institutionId, institutionAdmin, uint64(block.timestamp - 100 days), uint64(block.timestamp - 1 days), "ipfs://inst");
+
+        assertFalse(registry.isAccredited(institutionId));
+    }
+
+    function testIsAccreditedReturnsFalseWhenUnknown() public {
+        bytes32 unknownId = keccak256("unknown.institution");
+        assertFalse(registry.isAccredited(unknownId));
+    }
 }
