@@ -74,7 +74,10 @@ export function buildApp(
       (method) =>
         method === verificationMethod
           ? keyPair.publicKey
-          : method.includes("#key-")
+          : process.env.NODE_ENV !== "production" &&
+              /^did:web:(wvit|rie|ehu|git)\.edu\.in#iss-\d+#key-\d+$/.test(
+                method,
+              )
             ? deterministicIssuerKeyPair(method.replace(/#key-\d+$/, ""))
                 .publicKey
             : undefined,
