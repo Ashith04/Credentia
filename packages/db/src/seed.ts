@@ -44,6 +44,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
       const [item] = await tx
         .insert(institutions)
         .values({
+          businessId: row.institution_id,
           externalId: row.institution_id,
           legalName: row.name,
           country: row.country,
@@ -56,7 +57,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
             : null,
         })
         .onConflictDoUpdate({
-          target: institutions.externalId,
+          target: institutions.businessId,
           set: { legalName: row.name },
         })
         .returning();
@@ -80,6 +81,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
       const [item] = await tx
         .insert(issuers)
         .values({
+          businessId: row.issuer_id,
           externalId: row.issuer_id,
           institutionId: institutionIds.get(row.institution_id)!,
           did: row.did,
@@ -87,7 +89,7 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
           active: row.key_status !== "REVOKED",
         })
         .onConflictDoUpdate({
-          target: issuers.externalId,
+          target: issuers.businessId,
           set: { active: row.key_status !== "REVOKED" },
         })
         .returning();
