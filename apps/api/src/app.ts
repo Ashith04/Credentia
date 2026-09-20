@@ -75,7 +75,8 @@ export function buildApp(
         method === verificationMethod
           ? keyPair.publicKey
           : method.includes("#key-")
-            ? deterministicIssuerKeyPair(method.split("#")[0]!).publicKey
+            ? deterministicIssuerKeyPair(method.replace(/#key-\d+$/, ""))
+                .publicKey
             : undefined,
       credentials,
       new VerificationRepository(),
