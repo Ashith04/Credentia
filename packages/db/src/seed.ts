@@ -2,6 +2,11 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { eq } from "drizzle-orm";
+import {
+  deterministicIssuerKeyPair,
+  issueCredential,
+  signCredential,
+} from "@credentia/credential-core";
 import { createDatabase, type DatabaseClient } from "./client.js";
 import {
   accreditations,
@@ -11,6 +16,7 @@ import {
   credentials,
   institutions,
   issuers,
+  issuerKeys,
   students,
   verificationRecords,
 } from "./schema.js";
@@ -96,19 +102,22 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
       issuerIds.set(row.issuer_id, item.id);
     }
     for (const row of dataset.accreditation_records)
-      await tx.insert(accreditations).values({
-        businessId: row.accreditation_id,
-        institutionId: institutionIds.get(row.institution_id)!,
-        status:
-          row.status === "ACTIVE"
-            ? "approved"
-            : row.status === "EXPIRED"
-              ? "revoked"
-              : "pending",
-        validFrom: row.valid_from ? new Date(row.valid_from) : null,
-        validUntil: row.valid_until ? new Date(row.valid_until) : null,
-        sourceReference: row.reference_id,
-      }).onConflictDoNothing();
+      await tx
+        .insert(accreditations)
+        .values({
+          businessId: row.accreditation_id,
+          institutionId: institutionIds.get(row.institution_id)!,
+          status:
+            row.status === "ACTIVE"
+              ? "approved"
+              : row.status === "EXPIRED"
+                ? "revoked"
+                : "pending",
+          validFrom: row.valid_from ? new Date(row.valid_from) : null,
+          validUntil: row.valid_until ? new Date(row.valid_until) : null,
+          sourceReference: row.reference_id,
+        })
+        .onConflictDoNothing();
     for (const row of dataset.credentials) {
       const lifecycle = status(row.current_status);
       const student = dataset.students.find(
@@ -137,13 +146,40 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
           statusListCredential: `urn:status:${row.credential_id}`,
         },
       };
+      const issuerDid = doc.issuer;
+      const signedDoc = signCredential(
+        issueCredential({
+          id: doc.id,
+          issuer: issuerDid,
+          subject: doc.credentialSubject,
+          statusIndex: 0,
+          statusListId: doc.credentialStatus.statusListCredential,
+          validFrom: doc.validFrom,
+          credentialVersion: doc.credentialVersion,
+        }),
+        deterministicIssuerKeyPair(issuerDid).privateKey,
+        `${issuerDid}#key-${row.current_version}`,
+      );
+      await tx
+        .insert(issuerKeys)
+        .values({
+          issuerId: issuerIds.get(row.issuer_id)!,
+          verificationMethod: `${issuerDid}#key-${row.current_version}`,
+          publicKey: deterministicIssuerKeyPair(issuerDid)
+            .publicKey.export({ format: "pem", type: "spki" })
+            .toString(),
+          keyVersion: `v${row.current_version}`,
+          validFrom: new Date(row.issue_date),
+          status: "active",
+        })
+        .onConflictDoNothing();
       await tx
         .insert(credentials)
         .values({
           credentialId: row.credential_id,
           institutionId: institutionIds.get(row.institution_id)!,
           issuerId: issuerIds.get(row.issuer_id)!,
-          credentialDocument: doc,
+          credentialDocument: signedDoc,
           subjectReference: row.student_id,
           credentialType: "AcademicCredential",
           issuedAt: new Date(row.issue_date),
@@ -153,43 +189,59 @@ export async function seedSyntheticData(db: DatabaseClient, dataset: Dataset) {
         })
         .onConflictDoUpdate({
           target: credentials.credentialId,
-          set: { credentialDocument: doc, lifecycle },
+          set: { credentialDocument: signedDoc, lifecycle },
         });
     }
     for (const row of dataset.credential_versions)
       await tx
         .insert(credentialVersions)
         .values({
+          businessId: row.version_id,
           credentialId: row.credential_id,
           version: row.version,
+          vcId: row.vc_id,
+          vcHash: row.vc_hash,
+          status: status(row.status),
+          issuedAt: new Date(row.issued_at),
           supersedesCredentialId: row.supersedes_version
             ? row.credential_id
             : undefined,
         })
         .onConflictDoNothing();
     for (const row of dataset.credential_status_history)
-      await tx.insert(credentialStatusHistory).values({
-        businessId: row.history_id,
-        credentialId: row.credential_id,
-        status: status(row.status),
-        reason: row.reason,
-        changedAt: new Date(row.changed_at),
-      }).onConflictDoNothing();
+      await tx
+        .insert(credentialStatusHistory)
+        .values({
+          businessId: row.history_id,
+          credentialId: row.credential_id,
+          version: row.version,
+          status: status(row.status),
+          reason: row.reason,
+          changedBy: row.changed_by,
+          changedAt: new Date(row.changed_at),
+        })
+        .onConflictDoNothing();
     for (const row of dataset.verification_records)
-      await tx.insert(verificationRecords).values({
-        businessId: row.verification_id,
-        credentialId: row.credential_id,
-        trusted: row.result === "VERIFIED",
-        evidence: row,
-      }).onConflictDoNothing();
+      await tx
+        .insert(verificationRecords)
+        .values({
+          businessId: row.verification_id,
+          credentialId: row.credential_id,
+          trusted: row.result === "VERIFIED",
+          evidence: row,
+        })
+        .onConflictDoNothing();
     for (const row of dataset.audit_logs)
-      await tx.insert(auditEvents).values({
-        businessId: row.audit_id,
-        eventType: row.action,
-        entityId: row.entity_id,
-        metadata: row.metadata ?? {},
-        createdAt: new Date(row.timestamp),
-      }).onConflictDoNothing();
+      await tx
+        .insert(auditEvents)
+        .values({
+          businessId: row.audit_id,
+          eventType: row.action,
+          entityId: row.entity_id,
+          metadata: row.metadata ?? {},
+          createdAt: new Date(row.timestamp),
+        })
+        .onConflictDoNothing();
   });
 }
 export async function runSyntheticSeed() {

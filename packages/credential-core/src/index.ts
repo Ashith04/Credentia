@@ -1,4 +1,11 @@
-import { type KeyObject, createHash, sign, verify } from "node:crypto";
+import {
+  type KeyObject,
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  sign,
+  verify,
+} from "node:crypto";
 import {
   type CredentialLifecycle,
   type StatusListService,
@@ -6,6 +13,19 @@ import {
 } from "@credentia/domain";
 
 export type CredentialStatus = CredentialLifecycle;
+export function deterministicIssuerKeyPair(issuer: string) {
+  const seed = createHash("sha256").update(`credentia-demo:${issuer}`).digest();
+  const der = Buffer.concat([
+    Buffer.from("302e020100300506032b657004220420", "hex"),
+    seed,
+  ]);
+  const privateKey = createPrivateKey({
+    key: der,
+    format: "der",
+    type: "pkcs8",
+  });
+  return { privateKey, publicKey: createPublicKey(privateKey) };
+}
 export interface AcademicSubject {
   id: string;
   givenName?: string;

@@ -3,6 +3,7 @@ import { MockBlockchainAdapter } from "@credentia/blockchain";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { loadSigningKeyPair } from "./config/signing-key.js";
+import { deterministicIssuerKeyPair } from "@credentia/credential-core";
 import { CredentialQrService } from "./modules/credentials/qr.js";
 import { CredentialRepository } from "./modules/credentials/repository.js";
 import type { CredentialRepositoryPort } from "./modules/credentials/repository.js";
@@ -71,7 +72,11 @@ export function buildApp(
     new VerificationService(
       chain,
       (method) =>
-        method === verificationMethod ? keyPair.publicKey : undefined,
+        method === verificationMethod
+          ? keyPair.publicKey
+          : method.includes("#key-")
+            ? deterministicIssuerKeyPair(method.split("#")[0]!).publicKey
+            : undefined,
       credentials,
       new VerificationRepository(),
     ),
