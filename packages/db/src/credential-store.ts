@@ -155,6 +155,7 @@ export class PostgresCredentialStore {
     const [institution] = await this.db
       .insert(institutions)
       .values({
+        externalId: did,
         legalName: did,
         country: "XX",
         did,
@@ -168,6 +169,7 @@ export class PostgresCredentialStore {
     const [issuer] = await this.db
       .insert(issuers)
       .values({
+        externalId: did,
         institutionId: institution.id,
         did,
         authorizedCredentialTypes: ["AcademicCredential"],

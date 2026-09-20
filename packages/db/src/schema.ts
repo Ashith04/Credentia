@@ -31,6 +31,7 @@ export const institutions = pgTable("institutions", {
   id: uuid("id").defaultRandom().primaryKey(),
   // businessId: synthetic dataset business key, e.g. "INST-0001"
   businessId: text("business_id").unique(),
+  externalId: text("external_id").notNull().unique(),
   legalName: text("legal_name").notNull(),
   // code: short institution code, e.g. "WVIT"
   code: text("code").unique(),
@@ -63,6 +64,7 @@ export const issuers = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     // businessId: synthetic dataset business key, e.g. "ISS-0001"
     businessId: text("business_id").unique(),
+    externalId: text("external_id").notNull().unique(),
     institutionId: uuid("institution_id")
       .notNull()
       .references(() => institutions.id),
@@ -81,6 +83,13 @@ export const issuers = pgTable(
   },
   (table) => [index("issuers_institution_id_idx").on(table.institutionId)],
 );
+export const students = pgTable("students", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  externalId: text("external_id").notNull().unique(),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+});
 export const issuerKeys = pgTable("issuer_keys", {
   id: uuid("id").defaultRandom().primaryKey(),
   issuerId: uuid("issuer_id")

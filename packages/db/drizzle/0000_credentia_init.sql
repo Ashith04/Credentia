@@ -10,3 +10,12 @@ CREATE TABLE "credential_versions" ("id" uuid PRIMARY KEY DEFAULT gen_random_uui
 CREATE TABLE "credential_status_history" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid(), "credential_id" text NOT NULL REFERENCES "credentials"("credential_id"), "status" "credential_lifecycle" NOT NULL, "reason" text, "changed_at" timestamptz NOT NULL DEFAULT now());
 CREATE TABLE "verification_records" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid(), "credential_id" text NOT NULL, "trusted" boolean NOT NULL, "evidence" jsonb NOT NULL, "verified_at" timestamptz NOT NULL DEFAULT now());
 CREATE TABLE "audit_events" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid(), "event_type" text NOT NULL, "entity_id" text NOT NULL, "metadata" jsonb NOT NULL, "created_at" timestamptz NOT NULL DEFAULT now());
+ALTER TABLE "institutions" ADD COLUMN "external_id" text NOT NULL UNIQUE;
+ALTER TABLE "issuers" ADD COLUMN "external_id" text NOT NULL UNIQUE;
+CREATE TABLE "students" ("id" uuid PRIMARY KEY DEFAULT gen_random_uuid(), "external_id" text NOT NULL UNIQUE, "institution_id" uuid NOT NULL REFERENCES "institutions"("id"), "full_name" text NOT NULL, "email" text NOT NULL);
+CREATE INDEX "issuers_institution_id_idx" ON "issuers" ("institution_id");
+CREATE INDEX "credentials_issuer_id_idx" ON "credentials" ("issuer_id");
+CREATE INDEX "credentials_lifecycle_idx" ON "credentials" ("lifecycle");
+CREATE INDEX "credential_versions_credential_id_idx" ON "credential_versions" ("credential_id");
+CREATE INDEX "credential_status_history_credential_id_idx" ON "credential_status_history" ("credential_id");
+CREATE INDEX "verification_records_credential_id_idx" ON "verification_records" ("credential_id");
